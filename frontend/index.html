@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <!-- Auth Section (Full Page) -->
+    <main id="auth-section" class="fade-in">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>ATLAS</h1>
+                <p>Your workspace, reimagined.</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+                <button class="tab-btn" onclick="switchTab('register')">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active">
+                <div class="input-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" name="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form">
+                <div class="input-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" name="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" name="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Join ATLAS</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- App Layout -->
+    <div id="dashboard-section" class="hidden">
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span>ATLAS</span>
+                </div>
+                <button class="toggle-btn" onclick="toggleSidebar()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+
+            <nav class="nav-links">
+                <a class="nav-item active" onclick="switchView('dashboard')">
+                    <span class="nav-icon">✓</span>
+                    <span>TaskFlow</span>
+                </a>
+                <a class="nav-item">
+                    <span class="nav-icon">📝</span>
+                    <span>Notes</span>
+                </a>
+                <a class="nav-item">
+                    <span class="nav-icon">📅</span>
+                    <span>Calendar</span>
+                </a>
+                <a class="nav-item" onclick="switchView('settings')">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Nav -->
+            <nav class="glass-nav">
+                <div class="profile-container">
+                    <div class="profile-icon" id="profile-icon">U</div>
+                    <div class="profile-dropdown">
+                        <a class="dropdown-item" onclick="switchView('settings')">Settings</a>
+                        <a class="dropdown-item" onclick="logout()" style="color:var(--danger)">Logout</a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="content-container fade-in">
+                <header class="dashboard-header">
+                    <div>
+                        <h2>Your Workspace</h2>
+                        <p id="date-display">Today</p>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <!-- Header Actions -->
+                        <button class="btn btn-secondary btn-icon" onclick="switchView('trash')" title="Trash">
+                            🗑️
+                        </button>
+                        <button class="btn btn-secondary btn-icon" onclick="switchView('history')" title="History">
+                            📈
+                        </button>
+                        <button onclick="openModal()" class="btn btn-primary">
+                            + New Task
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Stats Row -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <span class="stat-num" id="count-pending">0</span>
+                        <span class="stat-label">Pending</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-num" id="count-started">0</span>
+                        <span class="stat-label">Started</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-num" id="count-inprogress">0</span>
+                        <span class="stat-label">In Progress</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-num" id="count-completed">0</span>
+                        <span class="stat-label">Completed</span>
+                    </div>
+                </div>
+
+                <div id="task-list" class="task-grid"></div>
+            </div>
+
+            <!-- Trash View -->
+            <div id="view-trash" class="content-container hidden fade-in">
+                <header class="dashboard-header">
+                    <div>
+                        <h2>Trash</h2>
+                        <p>Restorable deleted tasks</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="switchView('dashboard')">Back</button>
+                </header>
+                <div id="trash-list" class="task-grid"></div>
+            </div>
+
+            <!-- History View -->
+            <div id="view-history" class="content-container hidden fade-in">
+                <header class="dashboard-header">
+                    <div>
+                        <h2>Performance History</h2>
+                        <p>Track your daily progress</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="switchView('dashboard')">Back</button>
+                </header>
+
+                <div class="chart-container"
+                    style="background: var(--card-bg); padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
+                    <canvas id="historyChart"></canvas>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; align-items: center;">
+                    <button class="btn btn-secondary" onclick="downloadGraph()">Download Graph</button>
+                    <form id="history-form" style="display: flex; gap: 1rem; align-items: center;">
+                        <input type="date" name="date" required class="btn-secondary"
+                            style="border:1px solid var(--border-color)">
+                        <input type="number" name="percentage" min="0" max="100" placeholder="%" required
+                            class="btn-secondary" style="width: 80px; border:1px solid var(--border-color)">
+                        <button type="submit" class="btn btn-primary">Update History</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings View -->
+            <div id="view-settings" class="content-container hidden fade-in">
+                <header class="dashboard-header">
+                    <div>
+                        <h2>Settings</h2>
+                        <p>Manage preferences and profile</p>
+                    </div>
+                </header>
+
+                <div class="settings-section">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <h4>Dark Mode</h4>
+                            <p>Enable dark appearance</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="theme-toggle" onchange="toggleTheme(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <h4 style="margin-top: 2rem; margin-bottom: 1rem;">Edit Profile</h4>
+                    <form id="profile-form">
+                        <div class="input-group" style="margin-bottom: 1rem;">
+                            <label>Username</label>
+                            <input type="text" name="username" id="settings-username" required>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 1rem;">
+                            <label>Email</label>
+                            <input type="email" name="email" id="settings-email" required>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 1.5rem;">
+                            <label>New Password (leave blank to keep)</label>
+                            <input type="password" name="password" id="settings-password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Create Task Modal -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <span onclick="closeModal()" class="close-btn">&times;</span>
+            <h3 style="margin-bottom: 1.5rem;">New Task</h3>
+            <form id="create-task-form">
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <label>Title</label>
+                    <input type="text" id="task-title" name="title" required>
+                </div>
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <label>Description</label>
+                    <textarea id="task-desc" name="description" rows="3"></textarea>
+                </div>
+                <div style="text-align: right; margin-top: 1.5rem;">
+                    <button type="button" onclick="closeModal()" class="btn btn-secondary"
+                        style="margin-right: 0.5rem;">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="app.js"></script>
+</body>
+
+</html>
