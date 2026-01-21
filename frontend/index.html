@@ -110,16 +110,12 @@
             <div id="view-dashboard" class="content-container fade-in">
                 <header class="dashboard-header">
                     <div>
-                        <h2>Your Workspace</h2>
+                        <h2 id="greeting">Hello, User</h2>
                         <p id="date-display">Today</p>
                     </div>
                     <div style="display: flex; gap: 1rem;">
-                        <!-- Header Actions -->
                         <button class="btn btn-secondary btn-icon" onclick="switchView('trash')" title="Trash">
                             🗑️
-                        </button>
-                        <button class="btn btn-secondary btn-icon" onclick="switchView('history')" title="History">
-                            📈
                         </button>
                         <button onclick="openModal()" class="btn btn-primary">
                             + New Task
@@ -147,6 +143,11 @@
                     </div>
                 </div>
 
+                <!-- Graph Section -->
+                <div class="chart-container">
+                    <canvas id="historyChart"></canvas>
+                </div>
+
                 <div id="task-list" class="task-grid"></div>
             </div>
 
@@ -160,33 +161,6 @@
                     <button class="btn btn-secondary" onclick="switchView('dashboard')">Back</button>
                 </header>
                 <div id="trash-list" class="task-grid"></div>
-            </div>
-
-            <!-- History View -->
-            <div id="view-history" class="content-container hidden fade-in">
-                <header class="dashboard-header">
-                    <div>
-                        <h2>Performance History</h2>
-                        <p>Track your daily progress</p>
-                    </div>
-                    <button class="btn btn-secondary" onclick="switchView('dashboard')">Back</button>
-                </header>
-
-                <div class="chart-container"
-                    style="background: var(--card-bg); padding: 2rem; border-radius: 16px; margin-bottom: 2rem;">
-                    <canvas id="historyChart"></canvas>
-                </div>
-
-                <div style="display: flex; gap: 1rem; justify-content: flex-end; align-items: center;">
-                    <button class="btn btn-secondary" onclick="downloadGraph()">Download Graph</button>
-                    <form id="history-form" style="display: flex; gap: 1rem; align-items: center;">
-                        <input type="date" name="date" required class="btn-secondary"
-                            style="border:1px solid var(--border-color)">
-                        <input type="number" name="percentage" min="0" max="100" placeholder="%" required
-                            class="btn-secondary" style="width: 80px; border:1px solid var(--border-color)">
-                        <button type="submit" class="btn btn-primary">Update History</button>
-                    </form>
-                </div>
             </div>
 
             <!-- Settings View -->
@@ -241,6 +215,15 @@
                 <div class="input-group" style="margin-bottom: 1rem;">
                     <label>Title</label>
                     <input type="text" id="task-title" name="title" required>
+                </div>
+                <!-- Priority Select -->
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <label>Priority</label>
+                    <select id="task-priority" name="priority">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
                 </div>
                 <div class="input-group" style="margin-bottom: 1rem;">
                     <label>Description</label>

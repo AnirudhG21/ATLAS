@@ -12,6 +12,9 @@ const dateDisplay = document.getElementById('date-display');
 const taskList = document.getElementById('task-list');
 const trashList = document.getElementById('trash-list');
 const modal = document.getElementById('task-modal');
+const modalTitle = document.querySelector('#task-modal h3');
+const modalBtn = document.querySelector('#task-modal button[type="submit"]');
+let editingTaskId = null;
 const views = {
     dashboard: document.getElementById('view-dashboard'),
     trash: document.getElementById('view-trash'),
@@ -20,6 +23,18 @@ const views = {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    // Profile Click
+    const profileContainer = document.querySelector('.profile-container');
+    profileContainer.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileContainer.classList.toggle('active');
+    });
+
+    // Close Interaction
+    window.addEventListener('click', () => {
+        profileContainer.classList.remove('active');
+    });
+
     // Theme
     if (localStorage.getItem('theme') === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
@@ -50,6 +65,18 @@ function initSession() {
         document.getElementById('settings-email').value = userEmail;
     }
     fetchTasks();
+    fetchStats();
+    fetchHistory();
+    updateGreeting();
+}
+
+function updateGreeting() {
+    const hours = new Date().getHours();
+    const greetingEl = document.getElementById('greeting');
+    let greeting = 'Good Morning';
+    if (hours >= 12) greeting = 'Good Afternoon';
+    if (hours >= 17) greeting = 'Good Evening';
+    greetingEl.textContent = `${greeting}, ${username || 'User'}`;
 }
 
 // Navigation & Views
@@ -63,8 +90,12 @@ function switchView(viewName) {
     if (viewName === 'dashboard') document.querySelector('.nav-item').classList.add('active'); // 1st match
 
     if (viewName === 'trash') fetchTrash();
-    if (viewName === 'dashboard') { fetchTasks(); fetchStats(); }
-    if (viewName === 'history') fetchHistory();
+    // if (viewName === 'dashboard') { fetchTasks(); fetchStats(); } // Already handled in Init/Switch
+    if (viewName === 'dashboard') {
+        fetchTasks();
+        fetchStats();
+        fetchHistory();
+    }
 }
 
 function toggleSidebar() {
@@ -115,7 +146,7 @@ function renderChart(data) {
     // Sort by date just in case
     data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    const labels = data.map(d => d.date);
+    const labels = data.map(d => new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
     const percentages = data.map(d => d.percentage);
 
     if (historyChartInstance) {
@@ -132,24 +163,40 @@ function renderChart(data) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Completion %',
+                label: 'Task Completion %',
                 data: percentages,
                 borderColor: '#007aff',
                 backgroundColor: 'rgba(0, 122, 255, 0.1)',
-                tension: 0.4,
+                borderWidth: 3,
+                tension: 0.3,
                 fill: true,
-                pointRadius: 6,
-                pointHoverRadius: 8
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#007aff',
+                pointBorderWidth: 2
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 y: {
                     beginAtZero: true,
                     max: 100,
-                    grid: { color: gridColor },
-                    ticks: { color: textColor }
+                    grid: {
+                        color: gridColor,
+                        borderDash: [5, 5]
+                    },
+                    ticks: {
+                        color: textColor,
+                        callback: function (value) { return value + '%' }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Percentage Completed',
+                        color: textColor
+                    }
                 },
                 x: {
                     grid: { display: false },
@@ -157,7 +204,15 @@ function renderChart(data) {
                 }
             },
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const d = data[context.dataIndex];
+                            return `${d.percentage}% (${d.completed}/${d.total} tasks)`;
+                        }
+                    }
+                }
             }
         }
     });
@@ -170,25 +225,7 @@ function downloadGraph() {
     link.click();
 }
 
-// Stats History Update
-document.getElementById('history-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const date = e.target.date.value;
-    const percentage = e.target.percentage.value;
-
-    try {
-        const res = await fetch(`${API_URL}/stats/history`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ date, percentage })
-        });
-        if (!res.ok) throw new Error;
-
-        showToast('History updated', 'success');
-        fetchHistory();
-        e.target.reset();
-    } catch { showToast('Update failed', 'error'); }
-});
+// History form removed
 
 
 // Task API
@@ -253,18 +290,19 @@ function renderTasks(tasks, container, isTrash) {
             `;
         }
 
-        // Expand logic: Click anywhere on card to toggle
-        div.onclick = () => div.classList.toggle('expanded');
+        // Click to Open Modal for Description/Edit
+        div.onclick = () => openModal(task);
 
         div.innerHTML = `
             <div class="task-header">
-                <h3>${task.title}</h3>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <h3>${task.title}</h3>
+                    <span class="priority-badge ${task.priority}">${task.priority}</span>
+                </div>
                 ${!isTrash ? `<button class="delete-btn" onclick="deleteTask(${task.id}, event)">&times;</button>` : ''}
             </div>
-            <div class="task-body">
-                <p>${task.description || 'No description'}</p>
-            </div>
-            <div class="task-footer" style="justify-content: ${isTrash ? 'flex-end' : 'flex-end'}">
+            <!-- Body hidden, shown in modal -->
+            <div class="task-footer" style="justify-content: ${isTrash ? 'flex-end' : 'flex-end'}; margin-top: auto; padding-top: 1rem;">
                 ${footerContent}
             </div>
         `;
@@ -350,18 +388,30 @@ document.getElementById('create-task-form').addEventListener('submit', async (e)
     const description = document.getElementById('task-desc').value;
 
     try {
-        const res = await fetch(`${API_URL}/tasks/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ title, description, status: 'Pending' })
-        });
+        let res;
+        if (editingTaskId) {
+            // Update
+            res = await fetch(`${API_URL}/tasks/${editingTaskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ title, description, status: localTasks.find(t => t.id === editingTaskId).status })
+            });
+        } else {
+            // Create
+            res = await fetch(`${API_URL}/tasks/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ title, description, status: 'Pending' })
+            });
+        }
+
         if (!res.ok) throw new Error;
 
         closeModal();
         e.target.reset();
         fetchTasks();
-        showToast('Task created', 'success');
-    } catch { showToast('Creation failed', 'error'); }
+        showToast(editingTaskId ? 'Task updated' : 'Task created', 'success');
+    } catch { showToast('Operation failed', 'error'); }
 });
 
 // Profile Update
@@ -441,7 +491,22 @@ function logout() {
 }
 
 // Utils
-function openModal() { modal.classList.add('open'); }
+function openModal(task = null) {
+    modal.classList.add('open');
+    if (task) {
+        editingTaskId = task.id;
+        modalTitle.textContent = 'Task Details';
+        document.getElementById('task-title').value = task.title;
+        document.getElementById('task-desc').value = task.description || '';
+        document.getElementById('task-priority').value = task.priority || 'Medium';
+        modalBtn.textContent = 'Save Changes';
+    } else {
+        editingTaskId = null;
+        modalTitle.textContent = 'New Task';
+        document.getElementById('create-task-form').reset();
+        modalBtn.textContent = 'Create Task';
+    }
+}
 function closeModal() { modal.classList.remove('open'); }
 window.onclick = (e) => { if (e.target === modal) closeModal(); }
 

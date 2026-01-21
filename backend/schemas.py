@@ -6,6 +6,7 @@ class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
     status: str = "pending"
+    priority: str = "Medium"
     due_date: Optional[datetime] = None
 
 class TaskCreate(TaskBase):

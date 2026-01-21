@@ -4,6 +4,7 @@ from typing import List
 from models import User
 import models, schemas, database
 from . import auth
+from datetime import datetime
 
 router = APIRouter(
     prefix="/tasks",
@@ -36,7 +37,17 @@ def update_task(task_id: int, task: schemas.TaskCreate, db: Session = Depends(da
     if not existing_task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with id {task_id} not found")
     
-    task_query.update(task.dict(), synchronize_session=False)
+    # Update fields
+    update_data = task.dict(exclude_unset=True)
+    
+    # Handle completion timestamp
+    if "status" in update_data:
+        if update_data["status"] == "Completed" and existing_task.status != "Completed":
+            update_data["completed_at"] = datetime.utcnow()
+        elif update_data["status"] != "Completed":
+            update_data["completed_at"] = None
+            
+    task_query.update(update_data, synchronize_session=False)
     db.commit()
     return task_query.first()
 

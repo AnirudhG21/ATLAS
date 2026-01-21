@@ -22,6 +22,7 @@ class Task(Base):
     description = Column(String, index=True)
     status = Column(String, default="pending")
     due_date = Column(DateTime, default=None, nullable=True)
+    priority = Column(String, default="Medium")
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
